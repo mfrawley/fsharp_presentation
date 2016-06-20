@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Title</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Quicksand);
+      /*@import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);*/
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; }
+      h1, h2, h3 {
+        font-family: 'Quicksand';
+        /*font-family: 'Yanone Kaffeesatz';*/
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# Fable
+
+## F# |> JS Compiler 
+
+<i>Types can be pretty</i>
+
+---
+
+class: center, middle
+
+# WTF is F#?
+
+And why should I care?
+
+---
+
+# Introduction
+
+F# is a mature, open source, cross-platform, functional-first programming language.
+
+It runs on Linux, Mac OS X, Android, iOS, Windows, GPUs, and browsers. 
+
+It is free to use and is open source under an OSI-approved license.
+
+---
+
+# But it's from Microsoft??
+
+It's actually run by an Open Source Foundation now. Lots of contributions are coming from Open Source,
+e.g. Ionide (IDE as a service) and Paket (Package manager).
+
+
+See http://fsharp.org/
+
+It runs on Mono, and in the browser now too...
+
+
+---
+
+# Some Examples
+
+### Making Mario Jump
+```fsharp
+
+let step dir mario =
+  mario |> physics |> walk dir |> gravity |> jump dir
+```
+<i>Taken from Fable repo examples</i>
+
+### Calculating variance in a sequence
+```fsharp
+let variance values =
+  let average = Seq.average values values
+  |> Seq.map (fun x -> (1.0 / float (Seq.length values)) * (x - average) ** 2.0)
+  |> Seq.sum
+
+```
+<i>Excerpt From: “F# for Quantitative Finance.” iBooks. </i>
+
+---
+
+class: center, middle
+
+# One More Short Example
+
+### I promise..
+---
+
+# Model behaviour with types (not classes)
+
+```fsharp
+module Modules =
+    open Browser
+    
+    type ModuleType = Heading | Spacing
+    type HType = H1 | H2 | H3 | H4
+    type HeadingModulePayload = {
+        h: HType
+        text: string
+    }
+    
+    type SpacingModulePayload = {
+        height: int
+    }
+    
+    type ModulePayload = {
+        heading : HeadingModulePayload option
+        spacing : SpacingModulePayload option
+    }
+    
+    type JModule = {
+        modType : ModuleType
+        moduleId: int
+        pageId : int option
+        payload : ModulePayload
+    }
+   
+```
+
+---
+
+```fsharp
+    //Functions!!
+    //environmental state, NOOOOO!
+    let doc = Browser.document
+    
+    let idAsString(modId:int) : string = 
+        "cc-m-" + modId.ToString()
+        
+    (*
+        Construct a heading module
+    *)
+    let heading(hType: HType, innerText : string) : HTMLHeadingElement = 
+        let el = match hType with 
+            | H1 -> doc.createElement_h1()
+            | H2 -> doc.createElement_h2()
+            | H3 -> doc.createElement_h3()
+            | H4 -> doc.createElement_h4()
+        el.innerText <- innerText
+        el
+    
+    let spacing(height: int) : Browser.HTMLDivElement =
+        let d = doc.createElement_div()
+        d.className <- "cc-m-spacer"
+        let h = height
+        d.style.height <- h.ToString() + "px"
+        d 
+    
+    let wrapperDiv (modId : int) (child : HTMLElement) =
+        let el = doc.createElement "div"
+        el.setAttribute("id", idAsString(modId))
+        el.appendChild child |> ignore
+        el
+    
+    let removeModule(modId: int) =
+        let el = idAsString(modId) |> doc.getElementById
+        el.parentElement.removeChild(el) |> ignore
+    
+    let renderModule(jMod : JModule) : HTMLElement =
+        let t = jMod.modType      
+        let innerHtml = match t with
+            | Heading -> (match jMod.payload.heading with 
+                | None -> heading(H1, "")
+                | Some p -> heading(p.h, p.text)) :> HTMLElement
+            | Spacing -> (match jMod.payload.spacing with 
+                | None -> spacing 50
+                | Some s -> spacing s.height ) :> HTMLElement
+        wrapperDiv jMod.moduleId innerHtml
+            
+```
+---
+
+## Now some top-level code to test it works
+
+```fsharp
+// let render comps =
+//     comps |> Seq.map render
+let b = Browser.document.body
+
+let spacingPayload : Modules.SpacingModulePayload = {
+    height = 123
+}
+
+let payload: Modules.ModulePayload = {
+    spacing = Option.Some(spacingPayload)
+    heading = Option.None
+}
+
+let jMod: Modules.JModule = {
+    modType = Modules.ModuleType.Spacing;
+    moduleId = 2;
+    pageId = Option.Some(1234);
+    payload = payload
+}
+
+let d = Modules.renderModule jMod
+let n = b.appendChild(d)
+```
+
+---
+
+# Why didn't we use this?
+
+- Already have a TypeScript port of Momod that is tested.
+
+- Not enough interested people with typed functional programming knowledge to maintain. 
+
+- Maybe if we share more knowledge, we can start to identify/use better tools. 
+    </textarea>
+    <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
